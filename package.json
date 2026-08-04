@@ -7,8 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:storybook": "vitest --project=storybook --run --passWithNoTests",
+    "test:e2e": "playwright test",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm build-storybook"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.6.4",
