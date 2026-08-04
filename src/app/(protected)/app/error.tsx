@@ -6,7 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HOME_ROUTE } from "@/lib/auth-routes";
 
-export default function AppError({ reset }: { reset: () => void }) {
+type AppErrorProps = {
+  error: Error & { digest?: string };
+  reset: () => void;
+};
+
+export default function AppError({ reset }: AppErrorProps) {
   return (
     <section
       aria-labelledby="application-error-title"
