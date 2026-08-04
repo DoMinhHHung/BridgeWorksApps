@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run --project=unit --passWithNoTests",
     "test:storybook": "vitest --project=storybook --run --passWithNoTests",
     "test:e2e": "playwright test",
     "storybook": "storybook dev -p 6006",
