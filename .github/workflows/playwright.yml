@@ -57,7 +57,7 @@ jobs:
       - name: Run Storybook tests
         run: pnpm test:storybook
 
-      - name: Run six Playwright browser checks
+      - name: Run Playwright browser checks
         run: pnpm test:e2e
 
       - name: Upload Playwright report on failure
