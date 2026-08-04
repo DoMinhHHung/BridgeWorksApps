@@ -8,15 +8,18 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
+    ".agents/**",
     "out/**",
     "build/**",
+    "coverage/**",
+    "playwright-report/**",
+    "storybook-static/**",
+    "test-results/**",
     "next-env.d.ts",
   ]),
-  ...storybook.configs["flat/recommended"]
+  ...storybook.configs["flat/recommended"],
 ]);
 
 export default eslintConfig;
