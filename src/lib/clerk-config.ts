@@ -82,14 +82,15 @@ export function classifyClerkConfiguration(
 
   const publishableMatch = publishableKey.match(publishableKeyPattern);
   const secretMatch = secretKey.match(secretKeyPattern);
-  const malformedKeys: ClerkEnvironmentKey[] = [];
-  if (!publishableMatch) {
-    malformedKeys.push(CLERK_ENV_KEYS.publishableKey);
-  }
-  if (!secretMatch) {
-    malformedKeys.push(CLERK_ENV_KEYS.secretKey);
-  }
-  if (malformedKeys.length > 0) {
+  if (!publishableMatch || !secretMatch) {
+    const malformedKeys: ClerkEnvironmentKey[] = [];
+    if (!publishableMatch) {
+      malformedKeys.push(CLERK_ENV_KEYS.publishableKey);
+    }
+    if (!secretMatch) {
+      malformedKeys.push(CLERK_ENV_KEYS.secretKey);
+    }
+
     return {
       status: "malformed",
       keys: malformedKeys,
