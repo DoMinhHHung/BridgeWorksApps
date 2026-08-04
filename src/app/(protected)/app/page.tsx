@@ -5,9 +5,11 @@ import {
   AuthState,
   configurationStateKind,
 } from "@/components/layout/auth-state";
+import { getClerkSessionState } from "@/lib/auth-session.server";
 import { APP_ROUTE } from "@/lib/auth-routes";
 import { getClerkConfiguration } from "@/lib/clerk-config.server";
-import { getClerkSessionState } from "@/lib/auth-session.server";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Overview",
