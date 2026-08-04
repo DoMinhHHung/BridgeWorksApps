@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Check out repository
@@ -36,8 +36,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
 
       - name: Lint
         run: pnpm lint
@@ -57,7 +57,7 @@ jobs:
       - name: Run Storybook tests
         run: pnpm test:storybook
 
-      - name: Run Playwright smoke tests
+      - name: Run six Playwright browser checks
         run: pnpm test:e2e
 
       - name: Upload Playwright report on failure
