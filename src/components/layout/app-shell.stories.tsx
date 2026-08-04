@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { AppShell } from "@/components/layout/app-shell";
 
@@ -67,13 +67,16 @@ export const MobileNavigation: Story = {
     await userEvent.click(trigger);
 
     const page = within(canvasElement.ownerDocument.body);
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(
-      page.getByRole("navigation", { name: "Mobile application" }),
-    ).toBeVisible();
+    const dialog = page.getByRole("dialog");
+    await waitFor(() => expect(dialog).toBeVisible());
+    await waitFor(() =>
+      expect(
+        page.getByRole("navigation", { name: "Mobile application" }),
+      ).toBeVisible(),
+    );
 
     await userEvent.keyboard("{Escape}");
-    await expect(trigger).toHaveFocus();
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };
 
