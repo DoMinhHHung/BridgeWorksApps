@@ -1,18 +1,26 @@
-import { test, expect } from '@playwright/test';
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
 
-test('has title', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+test("renders the BridgeWorks frontend foundation", async ({ page }) => {
+  await page.goto("/");
 
-  // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/Playwright/);
+  await expect(page).toHaveTitle(/BridgeWorks/);
+  await expect(
+    page.getByRole("heading", {
+      name: "Build trusted work relationships, step by step.",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Explore the product foundation" }),
+  ).toBeVisible();
 });
 
-test('get started link', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+test("has no automatically detectable accessibility violations", async ({
+  page,
+}) => {
+  await page.goto("/");
 
-  // Click the get started link.
-  await page.getByRole('link', { name: 'Get started' }).click();
+  const results = await new AxeBuilder({ page }).analyze();
 
-  // Expects page to have a heading with the name of Installation.
-  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+  expect(results.violations).toEqual([]);
 });
