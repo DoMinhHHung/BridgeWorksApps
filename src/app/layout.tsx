@@ -44,8 +44,15 @@ export default function RootLayout({
   );
 
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  const clerkConfigured = Boolean(
+    publishableKey &&
+      secretKey &&
+      !publishableKey.includes("replace_me") &&
+      !secretKey.includes("replace_me"),
+  );
 
-  if (publishableKey && !publishableKey.includes("replace_me")) {
+  if (clerkConfigured && publishableKey) {
     return (
       <ClerkProvider publishableKey={publishableKey}>{document}</ClerkProvider>
     );
