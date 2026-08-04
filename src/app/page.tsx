@@ -12,7 +12,7 @@ export default function Home() {
       <header className="border-b border-border">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 lg:px-8">
           <span className="text-lg font-semibold tracking-tight">BridgeWorks</span>
-          <span className="rounded-full border border-border bg-muted px-3 py-1 text-sm text-muted-foreground">
+          <span className="rounded-full border border-border bg-muted px-3 py-1 text-sm text-foreground">
             Frontend foundation
           </span>
         </div>
