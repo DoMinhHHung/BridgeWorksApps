@@ -33,7 +33,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
-  projects: process.env.CI ? [browserProjects[0]] : browserProjects,
+  projects: browserProjects,
   webServer: {
     command: "pnpm dev",
     url: baseURL,
