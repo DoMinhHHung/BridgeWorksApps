@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const foundations = [
   "Next.js App Router with strict TypeScript",
-  "Clerk-ready authentication boundary",
-  "Storybook, Vitest, Playwright, and axe",
+  "Fail-closed Clerk authentication boundary",
+  "Secretless Storybook, Vitest, Playwright, and axe coverage",
 ];
 
 export default function Home() {
@@ -12,9 +12,12 @@ export default function Home() {
       <header className="border-b border-border">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 lg:px-8">
           <span className="text-lg font-semibold tracking-tight">BridgeWorks</span>
-          <span className="rounded-full border border-border bg-muted px-3 py-1 text-sm text-foreground">
-            Frontend foundation
-          </span>
+          <Link
+            href="/sign-in"
+            className="inline-flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-medium outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+          >
+            Sign in
+          </Link>
         </div>
       </header>
 
@@ -33,14 +36,17 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="#foundation"
-              className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              href="/sign-in"
+              className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
             >
-              Explore the product foundation
+              Sign in to BridgeWorks
             </Link>
-            <span className="inline-flex min-h-11 items-center text-sm text-muted-foreground">
-              Product workflows arrive in focused vertical slices.
-            </span>
+            <Link
+              href="#foundation"
+              className="inline-flex min-h-11 items-center justify-center rounded-md px-4 py-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+            >
+              Review the foundation
+            </Link>
           </div>
         </div>
 
