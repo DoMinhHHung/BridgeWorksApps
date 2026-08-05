@@ -2,30 +2,23 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { AppShell } from "@/components/layout/app-shell";
+import { CurrentUserOverview } from "@/features/current-user/current-user-overview";
 
-function OverviewContent() {
-  return (
-    <div className="space-y-8">
-      <header>
-        <p className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
-          Authenticated workspace
-        </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight">Overview</h1>
-        <p className="mt-4 max-w-2xl text-muted-foreground">
-          The protected BridgeWorks application shell is ready for focused
-          product vertical slices.
-        </p>
-      </header>
-      <section className="max-w-2xl rounded-xl border border-border bg-card p-8">
-        <h2 className="text-xl font-semibold">Foundation ready</h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          This story uses presentation-only account data and does not require a
-          Clerk secret.
-        </p>
-      </section>
-    </div>
-  );
-}
+const overview = (
+  <CurrentUserOverview
+    state={{
+      status: "ready",
+      user: {
+        id: "0198e9a0-1234-7abc-8def-1234567890ab",
+        id_user: "bw123405082634",
+        primary_email: "member@example.test",
+        status: "active",
+        created_at: "2026-08-03T01:02:03.000Z",
+        updated_at: "2026-08-05T04:05:06.000Z",
+      },
+    }}
+  />
+);
 
 const meta = {
   title: "Layout/App Shell",
@@ -33,10 +26,15 @@ const meta = {
   parameters: {
     layout: "fullscreen",
     controls: { disable: true },
+    nextjs: {
+      navigation: {
+        pathname: "/app",
+      },
+    },
   },
   args: {
     accountControl: <button type="button">Account for Taylor Bridge</button>,
-    children: <OverviewContent />,
+    children: overview,
   },
 } satisfies Meta<typeof AppShell>;
 
@@ -52,6 +50,9 @@ export const Desktop: Story = {
     await expect(canvas.getByRole("main")).toBeVisible();
     await expect(
       canvas.getByRole("navigation", { name: "Application" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("heading", { name: "Welcome to BridgeWorks", level: 1 }),
     ).toBeVisible();
   },
 };
