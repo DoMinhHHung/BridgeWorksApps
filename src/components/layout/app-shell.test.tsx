@@ -1,22 +1,26 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/layout/app-shell";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/app",
+}));
 
 function renderShell(accountName = "Taylor Bridge") {
   return render(
     <AppShell
       accountControl={<button type="button">Account for {accountName}</button>}
     >
-      <h1>Overview</h1>
-      <p>Protected application content</p>
+      <h1>Welcome to BridgeWorks</h1>
+      <p>Current account content</p>
     </AppShell>,
   );
 }
 
 describe("AppShell", () => {
-  it("renders semantic navigation, a skip link, and the main landmark", () => {
+  it("renders semantic route-aware navigation, a skip link, and the main landmark", () => {
     renderShell();
 
     expect(
@@ -30,7 +34,9 @@ describe("AppShell", () => {
       ),
     ).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("main")).toHaveAttribute("id", "main-content");
-    expect(screen.getByRole("heading", { name: "Overview" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Welcome to BridgeWorks" }),
+    ).toBeVisible();
   });
 
   it("opens and closes mobile navigation with keyboard focus returned", async () => {
@@ -47,6 +53,9 @@ describe("AppShell", () => {
         name: "Mobile application",
       }),
     ).toBeVisible();
+    expect(
+      within(dialog).getByRole("link", { name: "Overview" }),
+    ).toHaveAttribute("aria-current", "page");
     expect(
       within(dialog).getByRole("button", { name: "Close navigation" }),
     ).toBeVisible();

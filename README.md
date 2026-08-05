@@ -1,41 +1,31 @@
 # BridgeWorks Apps
 
-BridgeWorks Apps is the Next.js frontend for BridgeWorks, a private talent liquidity network that helps people and organizations move from a new connection to trusted collaboration and long-term work.
+BridgeWorks Apps is the Next.js frontend for BridgeWorks, a private talent liquidity network that helps people move from a new connection to trusted collaboration and longer-term work.
 
-The backend lives in `DoMinhHHung/bridgeworks`. Public frontend requests must go through Apache APISIX rather than directly to individual services.
+The backend lives in `DoMinhHHung/bridgeworks`. Public application requests go through Apache APISIX rather than directly to individual services.
 
 ## Stack
 
 - Next.js App Router and React Server Components
 - TypeScript strict mode
 - Tailwind CSS and owned shadcn/ui primitives
-- Clerk for authentication and organization context
-- React Hook Form and Zod
-- TanStack Query for interactive client-side server state when needed
+- Clerk for authentication and session management
+- Zod for external-response validation
 - Storybook and Vitest
 - Playwright and axe accessibility checks
 - pnpm and Node.js 24 LTS
 
-## Prerequisites
-
-```bash
-node --version
-pnpm --version
-```
-
-Use Node.js 24 LTS and pnpm 10.
-
 ## Local setup
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 cp .env.example .env.local
 pnpm dev
 ```
 
 Open `http://localhost:3000`.
 
-Populate `.env.local` with development values from the Clerk dashboard. Never commit `.env.local` or real secrets.
+Populate `.env.local` with development values from the Clerk dashboard. Never commit `.env.local`, real Clerk keys, session tokens, or backend secrets.
 
 ```dotenv
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -44,130 +34,178 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_replace_me
 CLERK_SECRET_KEY=sk_test_replace_me
 ```
 
-`NEXT_PUBLIC_API_BASE_URL` points to the local APISIX gateway. The checked-in `.env.example` intentionally contains placeholders only.
+`NEXT_PUBLIC_API_BASE_URL` is the project-standard APISIX gateway origin. It is validated as an absolute HTTP or HTTPS origin with no credentials, query, fragment, or path. Missing, placeholder, or malformed values produce a deterministic protected configuration state. The URL is not a credential; authenticated `/api/v1/me` calls are still initiated only from server code.
 
-## Authentication configuration
+The checked-in `.env.example` contains local origins and safe placeholders only.
 
-`src/lib/clerk-config.ts` classifies the Clerk key pair as one of:
+## Authentication boundary
 
-- `configured` — both keys follow Clerk's documented formats and belong to the same test or live environment;
-- `missing` — one or both values are absent or blank;
-- `placeholder` — checked-in example values or other obvious placeholders are present;
-- `malformed` — key formats are invalid or test/live environments do not match.
+`src/lib/clerk-config.ts` classifies the Clerk key pair as `configured`, `missing`, `placeholder`, or `malformed`. The Publishable Key is validated using Clerk's documented environment prefix and encoded Frontend API shape. The Secret Key is treated as opaque after its documented environment prefix and is never returned, logged, rendered, snapshotted, or serialized.
 
-A Publishable Key is validated as a `pk_test_` or `pk_live_` value containing a base64-encoded Frontend API value with Clerk's trailing `$` delimiter. A Secret Key is treated as opaque after its documented `sk_test_` or `sk_live_` prefix and requires only a non-empty payload; the frontend does not impose an undocumented charset or length.
+`src/lib/clerk-config.server.ts`, `src/lib/auth-session.server.ts`, `src/lib/bridgeworks-api-config.server.ts`, `src/lib/bridgeworks-api.server.ts`, and the current-user use case import `server-only`. A Client Component import therefore fails the Next.js build.
 
-`src/lib/clerk-config.server.ts` is the only environment-reading boundary. It validates the secret but never returns, logs, renders, or serializes it. `src/lib/clerk-config.server.ts` and `src/lib/auth-session.server.ts` both import `server-only`, so Next.js rejects either module when it is pulled into a Client Component. The root layout receives only the publishable key when configuration is valid.
+The existing fail-closed route policy remains:
 
-Secretless builds, public pages, Storybook, unit tests, and public browser tests continue to work. Protected routes never become public when Clerk is unavailable:
-
-| Route | Policy when Clerk is configured | Policy when Clerk is unavailable |
+| Route | Clerk configured | Clerk unavailable |
 | --- | --- | --- |
 | `/` | Public | Public |
-| `/sign-in/[[...sign-in]]` | Clerk sign-in; signed-in users return to `/app` | Safe configuration state |
-| `/sign-up/[[...sign-up]]` | Clerk sign-up; signed-in users return to `/app` | Safe configuration state |
-| `/app` and `/app/**` | Authentication required | HTTP 503 fail-closed response |
-| `/api/**` | No global policy; each future route defines its own boundary | No global policy |
+| `/sign-in/[[...sign-in]]` | Clerk sign-in | Safe configuration state |
+| `/sign-up/[[...sign-up]]` | Clerk sign-up | Safe configuration state |
+| `/app` and `/app/**` | Authentication required | HTTP 503 fail closed |
+| `/api/**` | No global policy; each future route owns its boundary | No global policy |
 
-The proxy provides an early redirect for unauthenticated document requests. The protected layout and protected page both repeat the server-side Clerk session check. This defense in depth is intentional because a layout check alone is not sufficient for every client-side navigation or future server resource.
+The proxy performs the early authentication redirect. Protected layouts and server use cases repeat session checks so a layout is not the only security boundary.
 
-## Application shell
+## Verified Identity current-user contract
 
-The current protected shell provides only one real navigation entry:
+Backend source and tests currently define:
+
+```http
+GET /api/v1/me
+Authorization: Bearer <Clerk session token>
+X-Request-Id: <forwarded or generated request ID>
+```
+
+The request goes through APISIX. The frontend does not verify Clerk JWTs and does not send cookies or use credentialed CORS assumptions.
+
+Successful response:
+
+```json
+{
+  "id": "<UUIDv7>",
+  "id_user": "bw123456789012",
+  "primary_email": "member@example.com or null",
+  "status": "active",
+  "created_at": "<RFC 3339 timestamp>",
+  "updated_at": "<RFC 3339 timestamp>"
+}
+```
+
+Error response:
+
+```json
+{
+  "code": "<stable error code>",
+  "message": "<safe message>",
+  "request_id": "<request ID>",
+  "details": null
+}
+```
+
+Verified mappings:
+
+| HTTP | Code | Frontend state |
+| ---: | --- | --- |
+| 200 | active payload | ready |
+| 401 | `unauthorized` | Clerk sign-in recovery with `/app` return URL |
+| 403 | `account_disabled` | disabled |
+| 403 | `account_deleted` | deleted |
+| 409 | `identity_not_ready` | identity not ready; preserves `Retry-After` |
+| 503 | `service_unavailable` | service unavailable |
+
+The Identity route does not currently provide a verified stable 429 error code. A structurally valid HTTP 429 response is mapped by status to the rate-limited UI without inventing a backend code. Unsupported status/code combinations and malformed payloads stop at a generic safe state.
+
+Current-user responses are `Cache-Control: no-store` and vary on `Authorization`. A 401 includes the backend Bearer challenge; a 409 currently recommends `Retry-After: 2`.
+
+## Frontend architecture
+
+The current-user vertical slice is separated into:
+
+- `src/lib/bridgeworks-api-config.ts` — pure API origin classification;
+- `src/lib/bridgeworks-api-config.server.ts` — server-only environment boundary;
+- `src/lib/bridgeworks-api-core.ts` — bounded request transport with timeout, `cache: "no-store"`, `credentials: "omit"`, Bearer header, request-ID forwarding, and bounded response bodies;
+- `src/lib/bridgeworks-api.server.ts` — server-only APISIX client entry point;
+- `src/features/current-user/current-user-contract.ts` — strict Zod decoding and backend status/code mapping;
+- `src/features/current-user/current-user.service.server.ts` — Clerk token acquisition and typed current-user use case;
+- `src/features/current-user/current-user-overview.tsx` — product-facing UI state mapping.
+
+The Clerk token exists only in the server request path. It is never returned in a result union, passed to a Client Component, written to logs, or included in Storybook fixtures. Server diagnostics contain only a bounded state name and request ID.
+
+## Current account experience
+
+When Identity is ready, `/app` shows:
+
+- public BridgeWorks ID (`id_user`);
+- primary email or a safe unavailable value;
+- active lifecycle state;
+- joined date;
+- last Identity update date;
+- a neutral next-step message without a fake profile route, progress percentage, or product metric.
+
+The internal Identity UUID is validated but not rendered.
+
+Dedicated states exist for loading, Identity synchronization pending, disabled, deleted, unauthorized session recovery, rate limiting, service unavailable, API configuration failure, malformed response, and unexpected failure. Error states do not show stale account data. Backend request IDs are rendered with a clear label on non-success states.
+
+The application shell still exposes only one real route:
 
 ```text
 Overview → /app
 ```
 
-It includes:
+Desktop and mobile navigation consume the same navigation model, and `aria-current` is derived from the active pathname.
 
-- a skip link and semantic header, navigation, and main landmarks;
-- a keyboard-accessible Radix mobile navigation sheet with Escape handling and focus return;
-- persistent navigation from 1024 px upward;
-- constrained content width at large viewports;
-- a Clerk `UserButton` with stable loading dimensions;
-- loading, configuration unavailable, session unavailable, and unexpected error states;
-- reduced-motion behavior and visible focus states.
+## Product UI
 
-No jobs, talent, organizations, marketplace, applications, billing, messaging, fake metrics, fake users, or invented backend calls are included.
+The public landing page contains product-facing value and links to:
 
-## Backend authentication contract
+- Create an account → `/sign-up`
+- Sign in → `/sign-in`
 
-The backend verifies Clerk session JWTs at the service boundary. Browser requests must send `Authorization: Bearer <session token>` through APISIX. APISIX forwards the header, applies browser CORS and `X-Request-Id`, and does not perform JWT verification itself.
+It does not expose framework, testing, engineering-status, fake testimonial, fake company, fake user-count, jobs, marketplace, organization, billing, messaging, or analytics copy.
 
-This frontend PR does not call a backend endpoint. A future API client must preserve `X-Request-Id`, parse the backend error envelope `{code,message,request_id,details}`, and map account and dependency states without exposing raw backend errors.
+BridgeWorks uses a focused indigo brand accent plus semantic information, success, warning, and destructive tokens. The existing shadcn/Tailwind foundation, visible focus behavior, reduced-motion support, and restrained card hierarchy remain. Clerk appearance uses the same typography, radius, primary action, input, focus, error, and social-button direction without custom authentication logic.
 
 ## Commands
 
 ```bash
-pnpm dev                # local development
-pnpm lint               # ESLint
-pnpm typecheck          # TypeScript
-pnpm test               # unit Vitest project
-pnpm build              # production build
-pnpm storybook          # Storybook development server
-pnpm build-storybook    # static Storybook build
-pnpm test:storybook     # Storybook component tests
-pnpm test:e2e           # local Playwright tests in three browsers
-pnpm check              # lint, typecheck, unit test, app build, Storybook build
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm build-storybook
+pnpm test:storybook
+pnpm test:e2e
+pnpm check
 ```
 
-Playwright starts the local Next.js server automatically and never visits an external website.
+`pnpm check` runs lint, typecheck, unit tests, application build, and Storybook build. Playwright runs Chromium, Firefox, and WebKit.
 
-Without a dedicated Clerk test instance, CI covers:
+Secretless CI covers public product copy, auth CTAs, deterministic auth-unavailable pages, fail-closed `/app`, component states, responsive navigation presentation, accessibility smoke, and horizontal overflow checks at 375, 768, 1024, and 1440 pixels. CI does not bypass Clerk or claim an authenticated Clerk flow without a dedicated test instance and credentials.
 
-- public routes;
-- configuration classification;
-- public/protected pathname policy;
-- presentation-only shell rendering and keyboard navigation;
-- deterministic auth-unavailable pages;
-- protected-route HTTP 503 fail-closed behavior;
-- axe checks across public and unavailable states.
+### Manual authenticated Identity smoke checklist
 
-CI does not claim an authenticated end-to-end Clerk redirect or sign-in flow without actual Clerk test credentials.
+**Status: Pending — not executed.** Valid Clerk development keys and a reachable APISIX/Identity stack were not available in the automated environment.
 
-### Manual authenticated smoke checklist
-
-**Status: pending.** This checklist has not been executed for this PR because no dedicated Clerk test instance and credentials were available in the automated environment.
-
-- [ ] A signed-out request to `/app` redirects to `/sign-in` with a valid return path.
-- [ ] The real Clerk sign-in component renders without a configuration or network error.
-- [ ] Successful sign-in returns the user to `/app`.
+- [ ] A signed-out user opens `/app`.
+- [ ] Clerk redirects the user to `/sign-in` with `/app` as the return destination.
+- [ ] Real Clerk sign-in renders and succeeds.
+- [ ] The user returns to `/app`.
+- [ ] The frontend obtains the Clerk session token only on the server.
+- [ ] The server calls APISIX `GET /api/v1/me` with the Bearer token.
+- [ ] A real current-user response renders the public ID, email state, lifecycle, and dates.
 - [ ] Refreshing `/app` preserves the authenticated session.
-- [ ] The `UserButton` opens and signing out completes successfully.
-- [ ] After sign-out, accessing `/app` is protected again and returns to the sign-in flow.
-- [ ] `.env.local` remains ignored and is not staged or committed.
-- [ ] Browser HTML, console output, network payloads, and client bundles contain no `CLERK_SECRET_KEY` value or other server secret.
+- [ ] `UserButton` opens and works.
+- [ ] Signing out completes successfully.
+- [ ] `/app` becomes protected again after sign-out.
+- [ ] Browser DevTools and client bundles contain no Clerk Secret Key or session token rendered by the application.
+- [ ] The APISIX request sends no unnecessary Cookie header and does not use credentialed CORS.
+- [ ] Error responses display the backend request ID and honor `Retry-After` guidance without an automatic retry loop.
+- [ ] `.env.local` remains ignored and uncommitted.
 
-## Agent instructions and UI skills
+## Agent instructions and repository boundaries
 
-Agents must read these files before changing UI code:
+Agents must read, in order:
 
 1. `AGENTS.md`
 2. `.agents/skills/bridgeworks-ui/SKILL.md`
 3. `.agents/skills/ui-ux-pro-max/SKILL.md`
 
-BridgeWorks-specific rules, verified backend contracts, and the existing design system override generic skill recommendations.
+BridgeWorks-specific rules, verified backend contracts, and the existing design system override generic recommendations.
 
-## Repository boundaries
-
-- Do not invent backend endpoints.
-- Verify routes, auth, status, error-envelope, CORS, and request-ID contracts from backend `main`.
-- Keep generic primitives in `src/components/ui`.
-- Keep feature-specific code in `src/features`.
+- Do not invent backend endpoints or response fields.
+- Keep generic primitives in `src/components/ui` and feature code in `src/features`.
 - Prefer Server Components and keep Client Components small.
-- Preserve `X-Request-Id` when backend integration is added.
-- Do not expose tokens, secrets, private identifiers, or raw backend errors.
-
-## CI
-
-The frontend workflow validates:
-
-- frozen dependency installation;
-- lint and typecheck;
-- Vitest unit tests;
-- Next.js production build;
-- Storybook build and Storybook tests;
-- Playwright smoke, fail-closed, and axe checks across Chromium, Firefox, and WebKit.
-
-Playwright reports are retained only when the workflow fails.
+- Preserve `X-Request-Id` and the backend error envelope.
+- Do not expose tokens, secrets, private provider identifiers, internal UUIDs, or raw backend errors.
+- Do not add jobs, talent, marketplace, organizations, billing, messaging, or deployment behavior without an approved vertical slice.

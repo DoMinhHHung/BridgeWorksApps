@@ -57,6 +57,9 @@ jobs:
       - name: Run Storybook tests
         run: pnpm test:storybook
 
+      - name: Run aggregate frontend check
+        run: pnpm check
+
       - name: Run Playwright browser checks
         run: pnpm test:e2e
 

@@ -1,8 +1,13 @@
 "use client";
 
-import { Home, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
+import {
+  APP_NAVIGATION_ITEMS,
+  isAppNavigationItemCurrent,
+} from "@/components/layout/app-navigation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -14,7 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { APP_ROUTE } from "@/lib/auth-routes";
+import { cn } from "@/lib/utils";
 
 type MobileAppNavigationProps = {
   accountControl: React.ReactNode;
@@ -23,6 +28,8 @@ type MobileAppNavigationProps = {
 export function MobileAppNavigation({
   accountControl,
 }: MobileAppNavigationProps) {
+  const pathname = usePathname();
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -45,10 +52,10 @@ export function MobileAppNavigation({
           <div className="flex items-start justify-between gap-4">
             <div>
               <SheetTitle className="text-lg font-semibold tracking-tight">
-                BridgeWorks
+                <span className="text-primary">Bridge</span>Works
               </SheetTitle>
               <SheetDescription className="mt-1">
-                Application navigation
+                Account workspace navigation
               </SheetDescription>
             </div>
             <SheetClose asChild>
@@ -66,16 +73,30 @@ export function MobileAppNavigation({
         </SheetHeader>
 
         <nav aria-label="Mobile application" className="flex-1 p-4">
-          <SheetClose asChild>
-            <Link
-              href={APP_ROUTE}
-              aria-current="page"
-              className="flex min-h-11 items-center gap-3 rounded-md bg-sidebar-accent px-3 py-2 text-sm font-medium text-sidebar-accent-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring motion-reduce:transition-none"
-            >
-              <Home aria-hidden="true" className="size-4" />
-              Overview
-            </Link>
-          </SheetClose>
+          <div className="space-y-1">
+            {APP_NAVIGATION_ITEMS.map((item) => {
+              const current = isAppNavigationItemCurrent(pathname, item.href);
+              const Icon = item.icon;
+
+              return (
+                <SheetClose asChild key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={current ? "page" : undefined}
+                    className={cn(
+                      "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring motion-reduce:transition-none",
+                      current
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
+                    )}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                    {item.label}
+                  </Link>
+                </SheetClose>
+              );
+            })}
+          </div>
         </nav>
 
         <SheetFooter className="border-t border-border p-4">

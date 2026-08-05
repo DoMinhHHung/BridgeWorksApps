@@ -1,6 +1,7 @@
-import { Home } from "lucide-react";
 import Link from "next/link";
 
+import { AppNavigationLink } from "@/components/layout/app-navigation-link";
+import { APP_NAVIGATION_ITEMS } from "@/components/layout/app-navigation";
 import { MobileAppNavigation } from "@/components/layout/mobile-app-navigation";
 import { APP_ROUTE } from "@/lib/auth-routes";
 
@@ -13,19 +14,19 @@ function BrandLink() {
   return (
     <Link
       href={APP_ROUTE}
-      className="rounded-sm text-lg font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+      className="rounded-sm text-lg font-semibold tracking-tight text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
     >
-      BridgeWorks
+      <span className="text-primary">Bridge</span>Works
     </Link>
   );
 }
 
 export function AppShell({ accountControl, children }: AppShellProps) {
   return (
-    <div className="min-h-dvh bg-muted/40 text-foreground">
+    <div className="min-h-dvh overflow-x-hidden bg-muted/35 text-foreground">
       <a
         href="#main-content"
-        className="sr-only z-[100] rounded-md bg-primary px-4 py-3 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        className="sr-only z-[100] rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       >
         Skip to main content
       </a>
@@ -42,14 +43,11 @@ export function AppShell({ accountControl, children }: AppShellProps) {
           </div>
 
           <nav aria-label="Application" className="flex-1 p-4">
-            <Link
-              href={APP_ROUTE}
-              aria-current="page"
-              className="flex min-h-11 items-center gap-3 rounded-md bg-sidebar-accent px-3 py-2 text-sm font-medium text-sidebar-accent-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring motion-reduce:transition-none"
-            >
-              <Home aria-hidden="true" className="size-4" />
-              Overview
-            </Link>
+            <div className="space-y-1">
+              {APP_NAVIGATION_ITEMS.map((item) => (
+                <AppNavigationLink key={item.href} item={item} />
+              ))}
+            </div>
           </nav>
 
           <div className="border-t border-sidebar-border p-4">

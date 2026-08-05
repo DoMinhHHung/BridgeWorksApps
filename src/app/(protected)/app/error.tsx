@@ -14,21 +14,22 @@ type AppErrorProps = {
 export default function AppError({ reset }: AppErrorProps) {
   return (
     <section
+      role="alert"
       aria-labelledby="application-error-title"
-      className="max-w-xl rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8"
+      className="max-w-xl rounded-2xl border border-information/25 bg-information-muted p-6 text-information-muted-foreground shadow-sm sm:p-8"
     >
-      <div className="flex size-11 items-center justify-center rounded-lg bg-muted text-foreground">
+      <div className="flex size-11 items-center justify-center rounded-xl bg-background/80 shadow-sm">
         <AlertTriangle aria-hidden="true" className="size-5" />
       </div>
       <h1
         id="application-error-title"
         className="mt-5 text-2xl font-semibold tracking-tight"
       >
-        The application could not finish loading
+        We could not open your account workspace
       </h1>
-      <p className="mt-3 max-w-prose text-base leading-7 text-muted-foreground">
-        BridgeWorks stopped before rendering incomplete protected content. Try
-        the request again, or return to the public site.
+      <p className="mt-3 max-w-prose text-base leading-7">
+        BridgeWorks stopped before showing incomplete account information. Try
+        again, or return to the public site.
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <Button type="button" size="lg" onClick={reset}>
