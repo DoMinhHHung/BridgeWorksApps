@@ -1,22 +1,25 @@
-import { LayoutDashboard, type LucideIcon } from "lucide-react";
-
 import { APP_ROUTE } from "@/lib/auth-routes";
+
+export type AppNavigationIcon = "dashboard";
 
 export type AppNavigationItem = {
   label: string;
   href: string;
-  icon: LucideIcon;
+  icon: AppNavigationIcon;
 };
 
 export const APP_NAVIGATION_ITEMS: readonly AppNavigationItem[] = [
   {
     label: "Overview",
     href: APP_ROUTE,
-    icon: LayoutDashboard,
+    icon: "dashboard",
   },
 ];
 
-export function isAppNavigationItemCurrent(pathname: string, href: string) {
+export function isAppNavigationItemCurrent(
+  pathname: string,
+  href: string,
+) {
   if (href === APP_ROUTE) {
     return pathname === APP_ROUTE;
   }
