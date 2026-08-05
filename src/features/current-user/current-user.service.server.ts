@@ -12,9 +12,13 @@ import { requestCurrentIdentityUser } from "@/lib/bridgeworks-api.server";
 
 type ClerkAuthState = Awaited<ReturnType<typeof auth>>;
 type RedirectToSignIn = ClerkAuthState["redirectToSignIn"];
+type NonUnauthorizedBackendResult = Exclude<
+  CurrentUserBackendResult,
+  { status: "unauthorized" }
+>;
 
 export type CurrentUserExperience =
-  | CurrentUserBackendResult
+  | NonUnauthorizedBackendResult
   | {
       status: "configuration-error";
       configurationStatus: "missing" | "placeholder" | "malformed";
@@ -22,6 +26,11 @@ export type CurrentUserExperience =
     }
   | {
       status: "signed-out";
+      redirectToSignIn: RedirectToSignIn;
+    }
+  | {
+      status: "unauthorized";
+      requestId: string;
       redirectToSignIn: RedirectToSignIn;
     };
 
@@ -63,7 +72,10 @@ export async function getCurrentUserExperience(): Promise<CurrentUserExperience>
         requestId,
       };
       logCurrentUserState(result);
-      return result;
+      return {
+        ...result,
+        redirectToSignIn: session.redirectToSignIn,
+      };
     }
 
     const response = await requestCurrentIdentityUser({ token, requestId });
@@ -79,6 +91,12 @@ export async function getCurrentUserExperience(): Promise<CurrentUserExperience>
 
     const result = mapCurrentUserResponse(response.result);
     logCurrentUserState(result);
+    if (result.status === "unauthorized") {
+      return {
+        ...result,
+        redirectToSignIn: session.redirectToSignIn,
+      };
+    }
     return result;
   } catch {
     const result: CurrentUserViewState = {
