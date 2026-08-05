@@ -7,6 +7,7 @@ type ClerkEnvironmentKey =
   (typeof CLERK_ENV_KEYS)[keyof typeof CLERK_ENV_KEYS];
 
 type ClerkInstanceEnvironment = "test" | "live";
+type ClerkKeyKind = "pk" | "sk";
 
 export type ClerkConfiguration =
   | {
@@ -33,9 +34,6 @@ type ClerkEnvironmentInput = {
   secretKey?: string;
 };
 
-const publishableKeyPattern = /^pk_(test|live)_[A-Za-z0-9_-]{16,}$/;
-const secretKeyPattern = /^sk_(test|live)_[A-Za-z0-9_-]{16,}$/;
-
 function normalize(value: string | undefined) {
   return value?.trim() ?? "";
 }
@@ -50,6 +48,55 @@ function isPlaceholder(value: string) {
     normalized.startsWith("<") ||
     normalized.endsWith(">")
   );
+}
+
+function parsePrefixedEnvironment(
+  value: string,
+  kind: ClerkKeyKind,
+): ClerkInstanceEnvironment | null {
+  for (const environment of ["test", "live"] as const) {
+    const prefix = `${kind}_${environment}_`;
+    if (value.startsWith(prefix) && value.length > prefix.length) {
+      return environment;
+    }
+  }
+
+  return null;
+}
+
+function parsePublishableKeyEnvironment(
+  publishableKey: string,
+): ClerkInstanceEnvironment | null {
+  const environment = parsePrefixedEnvironment(publishableKey, "pk");
+  if (!environment) {
+    return null;
+  }
+
+  const encodedFrontendApi = publishableKey.slice(
+    `pk_${environment}_`.length,
+  );
+
+  try {
+    const decodedFrontendApi = atob(encodedFrontendApi);
+    if (
+      decodedFrontendApi.length <= 1 ||
+      !decodedFrontendApi.endsWith("$")
+    ) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  return environment;
+}
+
+function parseSecretKeyEnvironment(
+  secretKey: string,
+): ClerkInstanceEnvironment | null {
+  // Clerk documents the environment prefixes, but the remaining secret payload
+  // is opaque. Do not impose an undocumented charset or minimum length on it.
+  return parsePrefixedEnvironment(secretKey, "sk");
 }
 
 export function classifyClerkConfiguration(
@@ -80,14 +127,15 @@ export function classifyClerkConfiguration(
     return { status: "placeholder", keys: placeholderKeys };
   }
 
-  const publishableMatch = publishableKey.match(publishableKeyPattern);
-  const secretMatch = secretKey.match(secretKeyPattern);
-  if (!publishableMatch || !secretMatch) {
+  const publishableEnvironment =
+    parsePublishableKeyEnvironment(publishableKey);
+  const secretEnvironment = parseSecretKeyEnvironment(secretKey);
+  if (!publishableEnvironment || !secretEnvironment) {
     const malformedKeys: ClerkEnvironmentKey[] = [];
-    if (!publishableMatch) {
+    if (!publishableEnvironment) {
       malformedKeys.push(CLERK_ENV_KEYS.publishableKey);
     }
-    if (!secretMatch) {
+    if (!secretEnvironment) {
       malformedKeys.push(CLERK_ENV_KEYS.secretKey);
     }
 
@@ -98,8 +146,6 @@ export function classifyClerkConfiguration(
     };
   }
 
-  const publishableEnvironment = publishableMatch[1] as ClerkInstanceEnvironment;
-  const secretEnvironment = secretMatch[1] as ClerkInstanceEnvironment;
   if (publishableEnvironment !== secretEnvironment) {
     return {
       status: "malformed",
