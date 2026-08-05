@@ -52,6 +52,14 @@ export type CurrentUserBackendResult =
   | { status: "malformed-response"; requestId: string }
   | { status: "unexpected"; requestId: string };
 
+export type CurrentUserViewState =
+  | CurrentUserBackendResult
+  | {
+      status: "configuration-error";
+      configurationStatus: "missing" | "placeholder" | "malformed";
+      requestId: string;
+    };
+
 export function parseRetryAfter(
   value: string | null,
   now = Date.now(),
