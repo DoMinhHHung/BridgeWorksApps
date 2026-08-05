@@ -50,12 +50,14 @@ CLERK_SECRET_KEY=sk_test_replace_me
 
 `src/lib/clerk-config.ts` classifies the Clerk key pair as one of:
 
-- `configured` — both keys have valid formats and belong to the same test or live environment;
+- `configured` — both keys follow Clerk's documented formats and belong to the same test or live environment;
 - `missing` — one or both values are absent or blank;
 - `placeholder` — checked-in example values or other obvious placeholders are present;
 - `malformed` — key formats are invalid or test/live environments do not match.
 
-`src/lib/clerk-config.server.ts` is the only environment-reading boundary. It validates the secret but never returns, logs, renders, or serializes it. The root layout receives only the publishable key when configuration is valid.
+A Publishable Key is validated as a `pk_test_` or `pk_live_` value containing a base64-encoded Frontend API value with Clerk's trailing `$` delimiter. A Secret Key is treated as opaque after its documented `sk_test_` or `sk_live_` prefix and requires only a non-empty payload; the frontend does not impose an undocumented charset or length.
+
+`src/lib/clerk-config.server.ts` is the only environment-reading boundary. It validates the secret but never returns, logs, renders, or serializes it. `src/lib/clerk-config.server.ts` and `src/lib/auth-session.server.ts` both import `server-only`, so Next.js rejects either module when it is pulled into a Client Component. The root layout receives only the publishable key when configuration is valid.
 
 Secretless builds, public pages, Storybook, unit tests, and public browser tests continue to work. Protected routes never become public when Clerk is unavailable:
 
@@ -123,6 +125,19 @@ Without a dedicated Clerk test instance, CI covers:
 - axe checks across public and unavailable states.
 
 CI does not claim an authenticated end-to-end Clerk redirect or sign-in flow without actual Clerk test credentials.
+
+### Manual authenticated smoke checklist
+
+**Status: pending.** This checklist has not been executed for this PR because no dedicated Clerk test instance and credentials were available in the automated environment.
+
+- [ ] A signed-out request to `/app` redirects to `/sign-in` with a valid return path.
+- [ ] The real Clerk sign-in component renders without a configuration or network error.
+- [ ] Successful sign-in returns the user to `/app`.
+- [ ] Refreshing `/app` preserves the authenticated session.
+- [ ] The `UserButton` opens and signing out completes successfully.
+- [ ] After sign-out, accessing `/app` is protected again and returns to the sign-in flow.
+- [ ] `.env.local` remains ignored and is not staged or committed.
+- [ ] Browser HTML, console output, network payloads, and client bundles contain no `CLERK_SECRET_KEY` value or other server secret.
 
 ## Agent instructions and UI skills
 
