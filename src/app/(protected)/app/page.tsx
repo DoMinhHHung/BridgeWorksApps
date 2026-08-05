@@ -14,7 +14,10 @@ export const metadata: Metadata = {
 export default async function AppOverviewPage() {
   const experience = await getCurrentUserExperience();
 
-  if (experience.status === "signed-out") {
+  if (
+    experience.status === "signed-out" ||
+    experience.status === "unauthorized"
+  ) {
     return experience.redirectToSignIn({ returnBackUrl: APP_ROUTE });
   }
 
