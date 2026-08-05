@@ -1,13 +1,19 @@
+import { Buffer } from "node:buffer";
+
 import { describe, expect, it } from "vitest";
 
 import { classifyClerkConfiguration } from "@/lib/clerk-config";
 
-const publishableTestKey = `pk_test_${"a".repeat(24)}`;
-const secretTestKey = `sk_test_${"b".repeat(24)}`;
-const publishableLiveKey = `pk_live_${"c".repeat(24)}`;
+const frontendApiDomain = "bridgeworks-test.accounts.dev";
+const encodedFrontendApi = Buffer.from(`${frontendApiDomain}$`, "utf8").toString(
+  "base64",
+);
+const publishableTestKey = `pk_test_${encodedFrontendApi}`;
+const publishableLiveKey = `pk_live_${encodedFrontendApi}`;
+const secretTestKey = "sk_test_opaque:fixture/with+punctuation=";
 
- describe("classifyClerkConfiguration", () => {
-  it("classifies matching valid keys as configured without returning the secret", () => {
+describe("classifyClerkConfiguration", () => {
+  it("accepts an official-shaped test key pair without returning the secret", () => {
     const result = classifyClerkConfiguration({
       publishableKey: `  ${publishableTestKey}  `,
       secretKey: `  ${secretTestKey}  `,
@@ -19,6 +25,7 @@ const publishableLiveKey = `pk_live_${"c".repeat(24)}`;
       environment: "test",
     });
     expect(result).not.toHaveProperty("secretKey");
+    expect(JSON.stringify(result)).not.toContain(secretTestKey);
   });
 
   it("reports every missing key", () => {
@@ -58,7 +65,7 @@ const publishableLiveKey = `pk_live_${"c".repeat(24)}`;
     });
   });
 
-  it("classifies invalid key formats as malformed", () => {
+  it("classifies an invalid publishable key as malformed", () => {
     expect(
       classifyClerkConfiguration({
         publishableKey: "publishable-value",
@@ -71,7 +78,20 @@ const publishableLiveKey = `pk_live_${"c".repeat(24)}`;
     });
   });
 
-  it("rejects test and live keys from different Clerk instances", () => {
+  it("classifies a Secret Key without an opaque payload as malformed", () => {
+    expect(
+      classifyClerkConfiguration({
+        publishableKey: publishableTestKey,
+        secretKey: "sk_test_",
+      }),
+    ).toEqual({
+      status: "malformed",
+      keys: ["CLERK_SECRET_KEY"],
+      reason: "invalid_format",
+    });
+  });
+
+  it("rejects a live publishable key paired with a test Secret Key", () => {
     expect(
       classifyClerkConfiguration({
         publishableKey: publishableLiveKey,
