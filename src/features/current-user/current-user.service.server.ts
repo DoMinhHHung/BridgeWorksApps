@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import {
   mapCurrentUserResponse,
   type CurrentUserBackendResult,
+  type CurrentUserViewState,
 } from "@/features/current-user/current-user-contract";
 import { requestCurrentIdentityUser } from "@/lib/bridgeworks-api.server";
 
@@ -23,11 +24,6 @@ export type CurrentUserExperience =
       status: "signed-out";
       redirectToSignIn: RedirectToSignIn;
     };
-
-export type CurrentUserViewState = Exclude<
-  CurrentUserExperience,
-  { status: "signed-out" }
->;
 
 function safeRequestId(value: string | null) {
   const normalized = value?.trim() ?? "";
