@@ -1,12 +1,13 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
   APP_NAVIGATION_ITEMS,
   isAppNavigationItemCurrent,
+  type AppNavigationItem,
 } from "@/components/layout/app-navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+
+const navigationIcons = {
+  dashboard: LayoutDashboard,
+} satisfies Record<
+  AppNavigationItem["icon"],
+  React.ComponentType<React.SVGProps<SVGSVGElement>>
+>;
 
 type MobileAppNavigationProps = {
   accountControl: React.ReactNode;
@@ -76,7 +84,7 @@ export function MobileAppNavigation({
           <div className="space-y-1">
             {APP_NAVIGATION_ITEMS.map((item) => {
               const current = isAppNavigationItemCurrent(pathname, item.href);
-              const Icon = item.icon;
+              const Icon = navigationIcons[item.icon];
 
               return (
                 <SheetClose asChild key={item.href}>
