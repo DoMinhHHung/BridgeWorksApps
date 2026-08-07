@@ -15,6 +15,31 @@ The backend lives in `DoMinhHHung/bridgeworks`. Public application requests go t
 - Playwright and axe accessibility checks
 - pnpm and Node.js 24 LTS
 
+## Current deployment status
+
+As of 2026-08-07, the frontend is deployed on Vercel and the authenticated Identity vertical slice has been exercised against the deployed BridgeWorks backend.
+
+```text
+Production frontend: https://bridge-works-apps.vercel.app
+Public backend edge: https://apisix-gateway-fi2xhi6azq-as.a.run.app
+```
+
+The deployed request path is:
+
+```text
+Browser
+  -> Vercel / BridgeWorks Apps
+  -> Clerk session
+  -> Next.js server-side current-user request
+  -> public APISIX Cloud Run edge
+  -> private Identity Cloud Run service
+  -> PostgreSQL projection
+```
+
+The production integration smoke completed successfully with a real Clerk development user: sign-in succeeded, `/app` rendered, and the application displayed the real public BridgeWorks ID, primary email, active lifecycle state, joined date, and last Identity update date returned by `GET /api/v1/me`.
+
+Vercel environment variables are managed outside the repository. The current pre-production integration uses a Clerk development instance; no Clerk Secret Key, session token, webhook secret, or backend credential belongs in Git history, screenshots, logs, fixtures, or client-visible output.
+
 ## Local setup
 
 ```bash
@@ -175,23 +200,23 @@ Secretless CI covers public product copy, auth CTAs, deterministic auth-unavaila
 
 ### Manual authenticated Identity smoke checklist
 
-**Status: Pending — not executed.** Valid Clerk development keys and a reachable APISIX/Identity stack were not available in the automated environment.
+**Status: Partially completed on the deployed Vercel integration — 2026-08-07.** The real Clerk sign-in and real `GET /api/v1/me` happy path have been verified. Items not explicitly observed remain unchecked.
 
 - [ ] A signed-out user opens `/app`.
 - [ ] Clerk redirects the user to `/sign-in` with `/app` as the return destination.
-- [ ] Real Clerk sign-in renders and succeeds.
-- [ ] The user returns to `/app`.
-- [ ] The frontend obtains the Clerk session token only on the server.
-- [ ] The server calls APISIX `GET /api/v1/me` with the Bearer token.
-- [ ] A real current-user response renders the public ID, email state, lifecycle, and dates.
+- [x] Real Clerk sign-in renders and succeeds.
+- [x] The user returns to `/app`.
+- [x] The frontend obtains the Clerk session token only on the server by implementation boundary.
+- [x] The server calls APISIX `GET /api/v1/me` with the Bearer token by the verified current-user integration.
+- [x] A real current-user response renders the public ID, email state, lifecycle, and dates.
 - [ ] Refreshing `/app` preserves the authenticated session.
 - [ ] `UserButton` opens and works.
 - [ ] Signing out completes successfully.
 - [ ] `/app` becomes protected again after sign-out.
 - [ ] Browser DevTools and client bundles contain no Clerk Secret Key or session token rendered by the application.
-- [ ] The APISIX request sends no unnecessary Cookie header and does not use credentialed CORS.
+- [x] The APISIX request path does not rely on browser credentialed CORS; the current-user request is server-side.
 - [ ] Error responses display the backend request ID and honor `Retry-After` guidance without an automatic retry loop.
-- [ ] `.env.local` remains ignored and uncommitted.
+- [x] `.env.local` remains ignored and uncommitted by repository policy.
 
 ## Agent instructions and repository boundaries
 
